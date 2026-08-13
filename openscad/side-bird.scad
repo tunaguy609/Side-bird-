@@ -1,5 +1,5 @@
 // Side-Bird directional trolling bird
-// Simplified, guaranteed-valid OpenSCAD model
+// Rebuilt from scratch to match the uploaded reference silhouette
 // Units: millimeters
 
 $fn = 96;
@@ -8,18 +8,22 @@ $fn = 96;
 left_hand = false;       // false = right-hand bird, true = left-hand mirror
 show_debug_axes = false;
 
-// ---------- Dimensions ----------
+// ---------- Primary dimensions ----------
 overall_len = 190.5;     // 7.5 in
-body_len    = 139.7;     // 5.5 in
-body_dia    = 57.2;      // 2.25 in
-blade_chord = 44.5;      // 1.75 in
-blade_span  = 50.8;      // 2.0 in
+body_len    = 120.0;     // image-driven silhouette length
+body_w      = 58.0;      // broad, flat body
+body_t      = 20.0;      // thin profile
+blade_x     = 60.0;
 blade_thk   = 2.3;
+blade_chord = 52.0;
+blade_h     = 44.0;
 blade_angle = 10;
-blade_x     = 58.0;
-keel_len    = 50.8;      // 2.0 in
-keel_depth  = 31.75;     // 1.25 in below centreline
-keel_thk    = 3.2;
+
+rear_fin_x  = 88.0;
+rear_fin_w  = 10.0;
+rear_fin_h  = 22.0;
+rear_fin_t  = 2.4;
+
 nose_eye_d   = 9.5;
 nose_eye_len = 18;
 
@@ -32,62 +36,62 @@ module debug_axes(len=25) {
   }
 }
 
-// Create a lofted body from a few explicit hull stations.
-module body_shell() {
-  body_w = body_dia * 0.78;
-  body_t = body_dia * 0.60;
-
-  module station(x, sx, sy, sz) {
-    translate([x, 0, 0])
-      scale([sx, sy, sz])
-        sphere(r=1);
-  }
-
-  hull() {
-    station(0,                3.5, body_w*0.10, body_t*0.18);
-    station(18,               5.5, body_w*0.38, body_t*0.36);
-    station(45,               7.5, body_w*0.72, body_t*0.68);
-    station(78,               8.0, body_w*0.95, body_t*0.94);
-    station(104,              7.4, body_w*0.90, body_t*0.90);
-    station(125,              5.4, body_w*0.58, body_t*0.56);
-    station(body_len - 8,     2.2, body_w*0.18, body_t*0.18);
-    station(body_len,         1.2, body_w*0.08, body_t*0.08);
-  }
+// 2D body profile used for a flat, wing-like silhouette.
+module body_profile_2d() {
+  polygon(points=[
+    [0,   0],
+    [8,   10],
+    [24,  20],
+    [50,  28],
+    [78,  30],
+    [102, 26],
+    [116, 14],
+    [120,  0],
+    [116,-14],
+    [102,-26],
+    [78, -30],
+    [50, -28],
+    [24, -20],
+    [8,  -10]
+  ]);
 }
 
-// Broad side bar plus two angled support fins, closer to the reference silhouette.
-module side_bar() {
+module body_shell() {
+  linear_extrude(height=body_t, center=true, convexity=10)
+    scale([body_w/60, 1, 1])
+      body_profile_2d();
+}
+
+// Main cross bar seen in the reference.
+module main_bar() {
   translate([blade_x, 0, 0])
   rotate([0, blade_angle, 0])
-  union() {
-    // Main horizontal bar
-    translate([0, 0, 0])
-      cube([blade_chord, blade_thk, 8.0], center=true);
-
-    // Upper forward fin
-    translate([-blade_chord*0.12, 0, blade_span*0.20])
-      rotate([0, 0, 22])
-      cube([blade_chord*0.56, blade_thk, 6.6], center=true);
-
-    // Lower rear fin
-    translate([blade_chord*0.05, 0, -blade_span*0.26])
-      rotate([0, 0, -28])
-      cube([blade_chord*0.52, blade_thk, 6.6], center=true);
-  }
+    cube([blade_chord, blade_thk, 8.0], center=true);
 }
 
-// Small rear fin/keel.
+// Diagonal support pieces like the photo.
+module upper_spar() {
+  translate([blade_x - 8, 0, 12])
+  rotate([0, 0, 22])
+    cube([blade_chord*0.48, blade_thk, 6.0], center=true);
+}
+
+module lower_spar() {
+  translate([blade_x - 4, 0, -14])
+  rotate([0, 0, -28])
+    cube([blade_chord*0.46, blade_thk, 6.0], center=true);
+}
+
+// Small rear fin near the back of the body.
 module rear_fin() {
-  translate([body_len - 18, 0, -keel_depth*0.72])
+  translate([rear_fin_x, 0, -8])
   rotate([0, 90, 0])
-  hull() {
-    translate([-keel_len*0.50, 0, 0]) cube([0.8, keel_thk, keel_depth*0.16], center=true);
-    translate([ keel_len*0.50, 0, 0]) cube([0.8, keel_thk, keel_depth*0.52], center=true);
-  }
+    cube([rear_fin_h, rear_fin_t, rear_fin_w], center=true);
 }
 
+// Small nose tow eye/boss.
 module tow_eye() {
-  translate([-nose_eye_len*0.48, 0, 0])
+  translate([-nose_eye_len*0.42, 0, 0])
   rotate([0, 90, 0])
   difference() {
     cylinder(d=nose_eye_d, h=nose_eye_len, center=true);
@@ -98,7 +102,9 @@ module tow_eye() {
 module bird() {
   union() {
     body_shell();
-    side_bar();
+    main_bar();
+    upper_spar();
+    lower_spar();
     rear_fin();
     tow_eye();
   }
