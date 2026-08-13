@@ -1,14 +1,14 @@
 // Side-Bird directional trolling bird
-// Screenshot silhouette + design doc dimensions
+// Printable OpenSCAD file based on the design spec and reference screenshots
 // Units: millimeters
 
 $fn = 120;
 
 // ---------- Toggles ----------
-left_hand = false;
+left_hand = false;       // false = right-hand bird, true = left-hand mirror
 show_debug_axes = false;
 
-// ---------- Dimensions from design doc ----------
+// ---------- Design dimensions ----------
 overall_len = 190.5;
 body_len    = 139.7;
 body_dia    = 57.2;
@@ -32,8 +32,7 @@ module debug_axes(len=25) {
   }
 }
 
-// Flat body silhouette inspired by the screenshots.
-// Body length is kept to the design doc; the outline is wide and leaf-like.
+// Flat body silhouette with a rounded nose and tapered tail.
 module body_shell() {
   rotate([90, 0, 0])
   linear_extrude(height=20, center=true, convexity=10)
