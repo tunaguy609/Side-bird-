@@ -1,47 +1,51 @@
 // Side-Bird directional trolling bird
-// Updated to better match the shown Cults3D reference shape
+// Rebuilt to more closely match the reference silhouette
 // Units: millimeters
 
-$fn = 120;
+$fn = 140;
 
 // ---------- Main toggles ----------
 left_hand = false;       // false = right-hand bird, true = left-hand mirror
 show_debug_axes = false;
 
-// ---------- Key dimensions ----------
+// ---------- Overall dimensions ----------
 overall_len = 190.5;     // 7.5 in
 body_len    = 139.7;     // 5.5 in
 body_dia    = 57.2;      // 2.25 in
-nose_len    = 25.4;      // 1.0 in
-tail_len    = 12.7;      // 0.5 in
 blade_chord = 44.5;      // 1.75 in
 blade_span  = 50.8;      // 2.0 in
 blade_thk   = 2.3;
 blade_angle = 10;
-blade_x     = 56.0;      // approx 40% of body length from nose
+blade_x     = 58.0;      // slightly forward like the reference
 
 keel_len    = 50.8;      // 2.0 in
 keel_depth  = 31.75;     // 1.25 in below centreline
 keel_thk    = 3.2;
 
-// Tow eye placeholder geometry
 nose_eye_d   = 9.5;
 nose_eye_len = 18;
 
-// ---------- Shape controls ----------
-// These are tuned to give a flatter top, fuller belly, sharper nose/tail,
-// and more of the “directional bird” silhouette from the reference images.
-body_scale_y = 1.0;
-body_scale_z = 1.0;
-nose_r       = 5.0;
-shoulder_r   = body_dia * 0.50;
-mid_r        = body_dia * 0.53;
-tail_r       = 4.4;
+// ---------- Profile controls ----------
+// Reference-like body: flatter, broader in the middle, sharper nose and tail.
+body_thickness = 0.60 * body_dia;
+body_width     = 0.78 * body_dia;
 
-blade_root_drop = 2.0;   // slight downward lean to the outer blade
+// Stations: [x, width_scale, thickness_scale]
+profile_pts = [
+  [0,    0.10, 0.22],
+  [8,    0.34, 0.34],
+  [20,   0.58, 0.55],
+  [38,   0.82, 0.78],
+  [62,   1.00, 0.95],
+  [88,   0.98, 0.95],
+  [112,  0.86, 0.82],
+  [126,  0.60, 0.60],
+  [136,  0.30, 0.34],
+  [body_len, 0.08, 0.16]
+];
 
 // ---------- Helpers ----------
-function lerp(a,b,t) = a + (b-a)*t;
+function sgn(v) = v < 0 ? -1 : 1;
 
 module debug_axes(len=25){
   if (show_debug_axes) {
@@ -51,50 +55,55 @@ module debug_axes(len=25){
   }
 }
 
-// More bird-like body using several hull stations.
+function interp_pts(i) = profile_pts[i];
+
+module station(x, ws, ts){
+  translate([x,0,0])
+    scale([1, ws*body_width/2, ts*body_thickness/2])
+      sphere(r=1);
+}
+
 module body_shell(){
-  hull(){
-    translate([0,0,0]) scale([0.95,0.78,0.92]) sphere(r=nose_r);
-    translate([nose_len*0.40,0,0]) scale([1.00,0.95,1.00]) sphere(r=shoulder_r);
-    translate([nose_len + 40,0,0]) scale([1.02,1.00,1.00]) sphere(r=mid_r);
-    translate([nose_len + 78,0,0]) scale([1.00,0.98,0.98]) sphere(r=mid_r*0.98);
-    translate([body_len - 18,0,0]) scale([0.72,0.90,0.88]) sphere(r=tail_r);
-    translate([body_len,0,0]) scale([0.42,0.62,0.60]) sphere(r=4.0);
-  }
-}
-
-// Side blade: more like the reference, with a broad straight bar and swept lower fin.
-module side_blade(){
-  rotate([0,blade_angle,0])
-  translate([blade_x,0,0])
   union(){
-    // Main crossbar
-    translate([0,0,0])
-      cube([blade_chord, blade_thk, 8.0], center=true);
-
-    // Forward swept upper fin segment
-    rotate([0,0,28])
-      translate([-blade_chord*0.12, 0, blade_span*0.18])
-      cube([blade_chord*0.52, blade_thk, 7.0], center=true);
-
-    // Lower swept fin segment
-    rotate([0,0,-24])
-      translate([-blade_chord*0.18, 0, -blade_span*0.24 - blade_root_drop])
-      cube([blade_chord*0.58, blade_thk, 7.0], center=true);
+    for (i = [0 : len(profile_pts)-2]) {
+      hull(){
+        station(profile_pts[i][0],   profile_pts[i][1],   profile_pts[i][2]);
+        station(profile_pts[i+1][0], profile_pts[i+1][1], profile_pts[i+1][2]);
+      }
+    }
   }
 }
 
-// Tail keel: slightly more pronounced and angled like the reference thumbnails.
-module tail_keel(){
-  translate([body_len - tail_len*0.15, 0, -keel_depth*0.92])
+// Main side bar: broad and flat, like the reference images.
+module side_bar(){
+  translate([blade_x, 0, 0])
+  rotate([0, blade_angle, 0])
+  union(){
+    // main horizontal bar
+    translate([0,0,0]) cube([blade_chord, blade_thk, 8.2], center=true);
+
+    // forward-up fin on the outer side
+    translate([-blade_chord*0.10, 0, blade_span*0.18])
+      rotate([0,0,22])
+      cube([blade_chord*0.55, blade_thk, 6.8], center=true);
+
+    // lower-rear fin on the inner side
+    translate([blade_chord*0.05, 0, -blade_span*0.26])
+      rotate([0,0,-28])
+      cube([blade_chord*0.52, blade_thk, 6.8], center=true);
+  }
+}
+
+// Rear fin/keel: kept subtle, so the silhouette stays close to the shown model.
+module rear_fin(){
+  translate([body_len - 20, 0, -keel_depth*0.72])
   rotate([0,90,0])
   hull(){
-    translate([-keel_len/2,0,0]) cube([0.8, keel_thk, keel_depth*0.18], center=true);
-    translate([ keel_len/2,0,0]) cube([0.8, keel_thk, keel_depth*0.62], center=true);
+    translate([-keel_len*0.50,0,0]) cube([0.8, keel_thk, keel_depth*0.16], center=true);
+    translate([ keel_len*0.50,0,0]) cube([0.8, keel_thk, keel_depth*0.52], center=true);
   }
 }
 
-// Nose tow-eye boss/placeholder.
 module tow_eye(){
   translate([-nose_eye_len*0.48,0,0])
   rotate([0,90,0])
@@ -107,8 +116,8 @@ module tow_eye(){
 module bird(){
   union(){
     body_shell();
-    side_blade();
-    tail_keel();
+    side_bar();
+    rear_fin();
     tow_eye();
   }
 }
