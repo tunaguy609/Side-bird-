@@ -1,33 +1,29 @@
 // Side-Bird directional trolling bird
-// Rebuilt from scratch to match the uploaded reference silhouette
+// Rebuilt from screenshot silhouette + design doc dimensions
 // Units: millimeters
 
-$fn = 96;
+$fn = 120;
 
 // ---------- Toggles ----------
 left_hand = false;       // false = right-hand bird, true = left-hand mirror
 show_debug_axes = false;
 
-// ---------- Primary dimensions ----------
-overall_len = 190.5;     // 7.5 in
-body_len    = 120.0;     // image-driven silhouette length
-body_w      = 58.0;      // broad, flat body
-body_t      = 20.0;      // thin profile
-blade_x     = 60.0;
+// ---------- Design doc dimensions ----------
+overall_len = 190.5;
+body_len    = 139.7;
+body_dia    = 57.2;
+blade_chord = 44.5;
+blade_span  = 50.8;
 blade_thk   = 2.3;
-blade_chord = 52.0;
-blade_h     = 44.0;
 blade_angle = 10;
-
-rear_fin_x  = 88.0;
-rear_fin_w  = 10.0;
-rear_fin_h  = 22.0;
-rear_fin_t  = 2.4;
-
-nose_eye_d   = 9.5;
+blade_x     = 56.0;
+keel_len    = 50.8;
+keel_depth  = 31.75;
+keel_thk    = 3.2;
+nose_eye_d  = 9.5;
 nose_eye_len = 18;
 
-// ---------- Helpers ----------
+// ---------- Helper modules ----------
 module debug_axes(len=25) {
   if (show_debug_axes) {
     color("red")   cube([len, 0.6, 0.6], center=false);
@@ -36,60 +32,65 @@ module debug_axes(len=25) {
   }
 }
 
-// 2D body profile used for a flat, wing-like silhouette.
 module body_profile_2d() {
+  // Approximate top-view silhouette from the screenshots:
+  // broad mid-body, pointed tail, rounded nose.
   polygon(points=[
-    [0,   0],
-    [8,   10],
-    [24,  20],
-    [50,  28],
-    [78,  30],
-    [102, 26],
-    [116, 14],
-    [120,  0],
-    [116,-14],
-    [102,-26],
-    [78, -30],
-    [50, -28],
-    [24, -20],
-    [8,  -10]
+    [0,    0],
+    [4,   10],
+    [16,  18],
+    [34,  24],
+    [56,  28],
+    [80,  29],
+    [102, 27],
+    [122, 21],
+    [133, 12],
+    [139.7, 0],
+    [133,-12],
+    [122,-21],
+    [102,-27],
+    [80, -29],
+    [56, -28],
+    [34, -24],
+    [16, -18],
+    [4,  -10]
   ]);
 }
 
 module body_shell() {
-  linear_extrude(height=body_t, center=true, convexity=10)
-    scale([body_w/60, 1, 1])
-      body_profile_2d();
+  // Flattened, screenshot-like body using a simple extrude.
+  // The body is intentionally thin relative to width.
+  linear_extrude(height=20, center=true, convexity=10)
+    body_profile_2d();
 }
 
-// Main cross bar seen in the reference.
 module main_bar() {
+  // Thick horizontal crossbar through the middle
   translate([blade_x, 0, 0])
   rotate([0, blade_angle, 0])
     cube([blade_chord, blade_thk, 8.0], center=true);
 }
 
-// Diagonal support pieces like the photo.
 module upper_spar() {
-  translate([blade_x - 8, 0, 12])
+  // Diagonal support spar visible in the screenshots
+  translate([blade_x - 10, 0, 11])
   rotate([0, 0, 22])
-    cube([blade_chord*0.48, blade_thk, 6.0], center=true);
+    cube([blade_chord*0.52, blade_thk, 6.0], center=true);
 }
 
 module lower_spar() {
-  translate([blade_x - 4, 0, -14])
+  translate([blade_x - 4, 0, -13])
   rotate([0, 0, -28])
-    cube([blade_chord*0.46, blade_thk, 6.0], center=true);
+    cube([blade_chord*0.48, blade_thk, 6.0], center=true);
 }
 
-// Small rear fin near the back of the body.
 module rear_fin() {
-  translate([rear_fin_x, 0, -8])
+  // Small rear stabilizer / keel-like fin
+  translate([body_len - 18, 0, -10])
   rotate([0, 90, 0])
-    cube([rear_fin_h, rear_fin_t, rear_fin_w], center=true);
+    cube([keel_len*0.72, keel_thk, 9.0], center=true);
 }
 
-// Small nose tow eye/boss.
 module tow_eye() {
   translate([-nose_eye_len*0.42, 0, 0])
   rotate([0, 90, 0])
