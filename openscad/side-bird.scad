@@ -8,20 +8,28 @@ $fn = 120;
 left_hand = false;       // false = right-hand bird, true = left-hand mirror
 show_debug_axes = false;
 
+// ---------- Scale factor ----------
+scale_factor = 1.25;  // Increase overall size by 25%
+
 // ---------- Design dimensions ----------
-overall_len = 190.5;
-body_len    = 139.7;
-body_dia    = 57.2;
-blade_chord = 44.5;
-blade_span  = 50.8;
-blade_thk   = 2.3;
+overall_len = 190.5 * scale_factor;
+body_len    = 139.7 * scale_factor;
+body_dia    = 57.2 * scale_factor;
+blade_chord = 44.5 * scale_factor;
+blade_span  = 50.8 * scale_factor;
+blade_thk   = 2.3 * scale_factor;
 blade_angle = 10;
-blade_x     = 56.0;
-keel_len    = 50.8;
-keel_depth  = 31.75;
-keel_thk    = 3.2;
-nose_eye_d  = 9.5;
-nose_eye_len = 18;
+blade_x     = 56.0 * scale_factor;
+keel_len    = 50.8 * scale_factor;
+keel_depth  = 31.75 * scale_factor * 1.5;  // Extend keel 50% more up the belly
+keel_thk    = 3.2 * scale_factor;
+nose_eye_d  = 9.5 * scale_factor;
+nose_eye_len = 18 * scale_factor;
+
+// ---------- Jet passage dimensions ----------
+jet_diameter = 8 * scale_factor;  // Diameter of jet passages
+jet_pos_x = 70 * scale_factor;    // Position along body (X axis)
+jet_pos_z = 8 * scale_factor;     // Height offset from centerline (Z axis)
 
 // ---------- Helpers ----------
 module debug_axes(len=25) {
@@ -91,14 +99,31 @@ module tow_eye() {
   }
 }
 
+// Jet passages - through-holes for port and starboard
+module jet_passages() {
+  // Starboard jet (right side, positive Y)
+  translate([jet_pos_x, 15, jet_pos_z])
+  rotate([0, 0, 90])
+    cylinder(d=jet_diameter, h=30, center=true);
+  
+  // Port jet (left side, negative Y)
+  translate([jet_pos_x, -15, jet_pos_z])
+  rotate([0, 0, 90])
+    cylinder(d=jet_diameter, h=30, center=true);
+}
+
 module bird() {
-  union() {
-    body_shell();
-    main_bar();
-    upper_spar();
-    lower_spar();
-    rear_fin();
-    tow_eye();
+  difference() {
+    union() {
+      body_shell();
+      main_bar();
+      upper_spar();
+      lower_spar();
+      rear_fin();
+      tow_eye();
+    }
+    // Subtract the jet passages
+    jet_passages();
   }
 }
 
